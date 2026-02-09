@@ -1,0 +1,746 @@
+{% assign section_id = section.id | replace: '_', '' | downcase %}
+
+{% liquid
+  assign products_to_show = blank
+  assign source_type = section.settings.product_source
+
+  if source_type == 'metafield'
+    if section.settings.metafield_namespace != blank and section.settings.metafield_key != blank
+      assign metafield_value = product.metafields[section.settings.metafield_namespace][section.settings.metafield_key]
+      if metafield_value != blank
+        assign products_to_show = metafield_value.value
+      endif
+    endif
+  elsif source_type == 'collection'
+    if section.settings.related_collection != blank
+      assign products_to_show = section.settings.related_collection.products
+    endif
+  elsif source_type == 'manual'
+    assign products_to_show = section.settings.manual_products
+  endif
+%}
+
+{% style %}
+  .related-products-{{ section_id }} {
+    display: block;
+    width: 100%;
+    padding: {{ section.settings.section_padding_top }}px 0 {{ section.settings.section_padding_bottom }}px;
+    background-color: {{ section.settings.background_color }};
+  }
+
+  .related-products__container-{{ section_id }} {
+    max-width: {{ section.settings.container_width }}px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  .related-products__header-{{ section_id }} {
+    text-align: {{ section.settings.heading_alignment }};
+    margin-bottom: 32px;
+  }
+
+  .related-products__heading-{{ section_id }} {
+    font-size: {{ section.settings.heading_size }}px;
+    color: {{ section.settings.heading_color }};
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .related-products__grid-{{ section_id }} {
+    display: grid;
+    grid-template-columns: repeat({{ section.settings.products_per_row_desktop }}, 1fr);
+    gap: {{ section.settings.grid_gap }}px;
+  }
+
+  .related-products__product-card-{{ section_id }} {
+    display: flex;
+    flex-direction: column;
+    background-color: {{ section.settings.card_background }};
+    border-radius: {{ section.settings.card_border_radius }}px;
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: {{ section.settings.card_border_width }}px solid {{ section.settings.card_border_color }};
+  }
+
+  .related-products__product-card-{{ section_id }}:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .related-products__image-wrapper-{{ section_id }} {
+    position: relative;
+    width: 100%;
+    padding-bottom: 100%;
+    overflow: hidden;
+    background-color: #f5f5f5;
+  }
+
+  .related-products__image-{{ section_id }} {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .related-products__content-{{ section_id }} {
+    padding: 16px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .related-products__title-{{ section_id }} {
+    font-size: {{ section.settings.product_title_size }}px;
+    color: {{ section.settings.product_title_color }};
+    margin: 0 0 8px;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  .related-products__title-link-{{ section_id }} {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .related-products__title-link-{{ section_id }}:hover {
+    text-decoration: underline;
+  }
+
+  .related-products__vendor-{{ section_id }} {
+    font-size: 12px;
+    color: {{ section.settings.vendor_color }};
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .related-products__price-{{ section_id }} {
+    font-size: {{ section.settings.price_size }}px;
+    color: {{ section.settings.price_color }};
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
+  .related-products__price--compare-{{ section_id }} {
+    text-decoration: line-through;
+    color: {{ section.settings.compare_price_color }};
+    margin-right: 8px;
+    font-weight: 400;
+  }
+
+  .related-products__price--sale-{{ section_id }} {
+    color: {{ section.settings.sale_price_color }};
+  }
+
+  .related-products__button-{{ section_id }} {
+    width: 100%;
+    padding: 12px 20px;
+    background-color: {{ section.settings.button_background }};
+    color: {{ section.settings.button_text_color }};
+    border: none;
+    border-radius: {{ section.settings.button_border_radius }}px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    margin-top: auto;
+  }
+
+  .related-products__button-{{ section_id }}:hover {
+    background-color: {{ section.settings.button_hover_background }};
+  }
+
+  .related-products__button--sold-out-{{ section_id }} {
+    background-color: {{ section.settings.sold_out_button_background }};
+    color: {{ section.settings.sold_out_button_text }};
+    cursor: not-allowed;
+  }
+
+  .related-products__button--sold-out-{{ section_id }}:hover {
+    background-color: {{ section.settings.sold_out_button_background }};
+  }
+
+  .related-products__badge-{{ section_id }} {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 6px 12px;
+    background-color: {{ section.settings.sale_badge_bg }};
+    color: {{ section.settings.sale_badge_color }};
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    z-index: 1;
+  }
+
+  .related-products__empty-state-{{ section_id }} {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+  }
+
+  .related-products__empty-state-{{ section_id }} svg {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+
+  .related-products__mobile-slider-{{ section_id }} {
+    display: none;
+  }
+
+  @media screen and (max-width: 749px) {
+    .related-products__grid-{{ section_id }} {
+      display: none;
+    }
+
+    .related-products__mobile-slider-{{ section_id }} {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .related-products__mobile-slider-{{ section_id }}::-webkit-scrollbar {
+      display: none;
+    }
+
+    .related-products__slider-track-{{ section_id }} {
+      display: flex;
+      gap: 16px;
+      padding-bottom: 16px;
+    }
+
+    .related-products__slider-item-{{ section_id }} {
+      flex: 0 0 280px;
+      max-width: 280px;
+    }
+
+    .related-products__heading-{{ section_id }} {
+      font-size: {{ section.settings.heading_size | times: 0.8 }}px;
+    }
+  }
+
+  @media screen and (max-width: 989px) and (min-width: 750px) {
+    .related-products__grid-{{ section_id }} {
+      grid-template-columns: repeat({{ section.settings.products_per_row_tablet }}, 1fr);
+    }
+  }
+{% endstyle %}
+
+<related-products-{{ section_id }} class="related-products-{{ section_id }}" {{ section.shopify_attributes }}>
+  <div class="related-products__container-{{ section_id }}">
+    {% if section.settings.heading != blank %}
+      <div class="related-products__header-{{ section_id }}">
+        <h2 class="related-products__heading-{{ section_id }}">{{ section.settings.heading }}</h2>
+      </div>
+    {% endif %}
+
+    {% if products_to_show != blank and products_to_show.size > 0 %}
+      <div class="related-products__grid-{{ section_id }}">
+        {% for related_product in products_to_show limit: section.settings.products_to_show %}
+          <div class="related-products__product-card-{{ section_id }}">
+            <a href="{{ related_product.url }}" class="related-products__image-wrapper-{{ section_id }}">
+              {% if related_product.compare_at_price > related_product.price and section.settings.show_sale_badge %}
+                <span class="related-products__badge-{{ section_id }}">{{ section.settings.badge_text }}</span>
+              {% endif %}
+
+              {% if related_product.featured_image %}
+                <img
+                  src="{{ related_product.featured_image | image_url: width: 600 }}"
+                  alt="{{ related_product.featured_image.alt | escape }}"
+                  class="related-products__image-{{ section_id }}"
+                  loading="lazy"
+                  width="600"
+                  height="600"
+                >
+              {% else %}
+                <div class="related-products__image-{{ section_id }}">
+                  {{ 'product-1' | placeholder_svg_tag }}
+                </div>
+              {% endif %}
+            </a>
+
+            <div class="related-products__content-{{ section_id }}">
+              {% if section.settings.show_vendor and related_product.vendor != blank %}
+                <div class="related-products__vendor-{{ section_id }}">{{ related_product.vendor }}</div>
+              {% endif %}
+
+              <h3 class="related-products__title-{{ section_id }}">
+                <a href="{{ related_product.url }}" class="related-products__title-link-{{ section_id }}">
+                  {{ related_product.title }}
+                </a>
+              </h3>
+
+              {% if section.settings.show_price %}
+                <div class="related-products__price-{{ section_id }}">
+                  {% if related_product.compare_at_price > related_product.price %}
+                    <span class="related-products__price--compare-{{ section_id }}">
+                      {{ related_product.compare_at_price | money }}
+                    </span>
+                    <span class="related-products__price--sale-{{ section_id }}">
+                      {{ related_product.price | money }}
+                    </span>
+                  {% else %}
+                    {{ related_product.price | money }}
+                  {% endif %}
+                </div>
+              {% endif %}
+
+              {% if section.settings.show_add_to_cart %}
+                {% if related_product.available %}
+                  <form action="/cart/add" method="post" class="related-products__form-{{ section_id }}">
+                    <input type="hidden" name="id" value="{{ related_product.selected_or_first_available_variant.id }}">
+                    <button type="submit" class="related-products__button-{{ section_id }}">
+                      {{ section.settings.add_to_cart_text }}
+                    </button>
+                  </form>
+                {% else %}
+                  <button class="related-products__button-{{ section_id }} related-products__button--sold-out-{{ section_id }}" disabled>
+                    {{ section.settings.sold_out_text }}
+                  </button>
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="related-products__mobile-slider-{{ section_id }}">
+        <div class="related-products__slider-track-{{ section_id }}">
+          {% for related_product in products_to_show limit: section.settings.products_to_show %}
+            <div class="related-products__slider-item-{{ section_id }}">
+              <div class="related-products__product-card-{{ section_id }}">
+                <a href="{{ related_product.url }}" class="related-products__image-wrapper-{{ section_id }}">
+                  {% if related_product.compare_at_price > related_product.price and section.settings.show_sale_badge %}
+                    <span class="related-products__badge-{{ section_id }}">{{ section.settings.badge_text }}</span>
+                  {% endif %}
+
+                  {% if related_product.featured_image %}
+                    <img
+                      src="{{ related_product.featured_image | image_url: width: 600 }}"
+                      alt="{{ related_product.featured_image.alt | escape }}"
+                      class="related-products__image-{{ section_id }}"
+                      loading="lazy"
+                      width="600"
+                      height="600"
+                    >
+                  {% else %}
+                    <div class="related-products__image-{{ section_id }}">
+                      {{ 'product-1' | placeholder_svg_tag }}
+                    </div>
+                  {% endif %}
+                </a>
+
+                <div class="related-products__content-{{ section_id }}">
+                  {% if section.settings.show_vendor and related_product.vendor != blank %}
+                    <div class="related-products__vendor-{{ section_id }}">{{ related_product.vendor }}</div>
+                  {% endif %}
+
+                  <h3 class="related-products__title-{{ section_id }}">
+                    <a href="{{ related_product.url }}" class="related-products__title-link-{{ section_id }}">
+                      {{ related_product.title }}
+                    </a>
+                  </h3>
+
+                  {% if section.settings.show_price %}
+                    <div class="related-products__price-{{ section_id }}">
+                      {% if related_product.compare_at_price > related_product.price %}
+                        <span class="related-products__price--compare-{{ section_id }}">
+                          {{ related_product.compare_at_price | money }}
+                        </span>
+                        <span class="related-products__price--sale-{{ section_id }}">
+                          {{ related_product.price | money }}
+                        </span>
+                      {% else %}
+                        {{ related_product.price | money }}
+                      {% endif %}
+                    </div>
+                  {% endif %}
+
+                  {% if section.settings.show_add_to_cart %}
+                    {% if related_product.available %}
+                      <form action="/cart/add" method="post" class="related-products__form-{{ section_id }}">
+                        <input type="hidden" name="id" value="{{ related_product.selected_or_first_available_variant.id }}">
+                        <button type="submit" class="related-products__button-{{ section_id }}">
+                          {{ section.settings.add_to_cart_text }}
+                        </button>
+                      </form>
+                    {% else %}
+                      <button class="related-products__button-{{ section_id }} related-products__button--sold-out-{{ section_id }}" disabled>
+                        {{ section.settings.sold_out_text }}
+                      </button>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% else %}
+      <div class="related-products__empty-state-{{ section_id }}">
+        {{ 'product-1' | placeholder_svg_tag }}
+        <p>
+          {% if source_type == 'metafield' %}
+            No related products found. Add products to the metafield: {{ section.settings.metafield_namespace }}.{{ section.settings.metafield_key }}
+          {% elsif source_type == 'collection' %}
+            No products in the selected collection. Please select a collection with products.
+          {% elsif source_type == 'manual' %}
+            No products selected. Please add products manually.
+          {% else %}
+            Please configure the product source in the section settings.
+          {% endif %}
+        </p>
+      </div>
+    {% endif %}
+  </div>
+</related-products-{{ section_id }}>
+
+<script>
+  (function() {
+    class RelatedProducts{{ section_id }} extends HTMLElement {
+      connectedCallback() {
+        this.forms = this.querySelectorAll('.related-products__form-{{ section_id }}');
+        this.setupAddToCart();
+      }
+
+      setupAddToCart() {
+        this.forms.forEach((form) => {
+          form.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            const formData = new FormData(form);
+            const button = form.querySelector('.related-products__button-{{ section_id }}');
+            const originalText = button.textContent;
+
+            button.textContent = 'Adding...';
+            button.disabled = true;
+
+            fetch('/cart/add.js', { method: 'POST', body: formData })
+              .then(response => response.json())
+              .then(() => {
+                button.textContent = 'Added!';
+
+                setTimeout(() => {
+                  button.textContent = originalText;
+                  button.disabled = false;
+                }, 2000);
+
+                fetch('/cart.js')
+                  .then(response => response.json())
+                  .then(cart => {
+                    document.documentElement.dispatchEvent(new CustomEvent('cart:refresh', {
+                      bubbles: true,
+                      detail: { cart }
+                    }));
+                  });
+              })
+              .catch((error) => {
+                console.error('Error:', error);
+                button.textContent = 'Error';
+                setTimeout(() => {
+                  button.textContent = originalText;
+                  button.disabled = false;
+                }, 2000);
+              });
+          });
+        });
+      }
+    }
+
+    customElements.define('related-products-{{ section_id }}', RelatedProducts{{ section_id }});
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Custom related products",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Product source"
+    },
+    {
+      "type": "paragraph",
+      "content": "Choose how to display related products. Metafield is recommended for precise control."
+    },
+    {
+      "type": "select",
+      "id": "product_source",
+      "label": "Product source",
+      "options": [
+        { "value": "metafield", "label": "Product metafield" },
+        { "value": "collection", "label": "Collection" },
+        { "value": "manual", "label": "Manual selection" }
+      ],
+      "default": "metafield"
+    },
+    {
+      "type": "text",
+      "id": "metafield_namespace",
+      "label": "Metafield namespace",
+      "default": "custom",
+      "info": "Enter the namespace of your product metafield (e.g., 'custom')"
+    },
+    {
+      "type": "text",
+      "id": "metafield_key",
+      "label": "Metafield key",
+      "default": "related_products",
+      "info": "Enter the key of your product metafield (e.g., 'related_products'). The metafield type should be 'List of products'."
+    },
+    {
+      "type": "collection",
+      "id": "related_collection",
+      "label": "Collection"
+    },
+    {
+      "type": "product_list",
+      "id": "manual_products",
+      "label": "Products",
+      "limit": 10
+    },
+    {
+      "type": "header",
+      "content": "Section settings"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "You may also like"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Products to show",
+      "min": 8,
+      "max": 20,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "products_per_row_desktop",
+      "label": "Products per row (desktop)",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "products_per_row_tablet",
+      "label": "Products per row (tablet)",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "header",
+      "content": "Display options"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_vendor",
+      "label": "Show vendor",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "Show price",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_add_to_cart",
+      "label": "Show add to cart button",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_sale_badge",
+      "label": "Show sale badge",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Text content"
+    },
+    {
+      "type": "text",
+      "id": "add_to_cart_text",
+      "label": "Add to cart button text",
+      "default": "Add to Cart"
+    },
+    {
+      "type": "text",
+      "id": "sold_out_text",
+      "label": "Sold out button text",
+      "default": "Sold Out"
+    },
+    {
+      "type": "text",
+      "id": "badge_text",
+      "label": "Sale badge text",
+      "default": "Sale"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "container_width",
+      "label": "Container width",
+      "min": 1000,
+      "max": 1600,
+      "step": 100,
+      "unit": "px",
+      "default": 1200
+    },
+    {
+      "type": "range",
+      "id": "section_padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 60
+    },
+    {
+      "type": "range",
+      "id": "section_padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 60
+    },
+    {
+      "type": "range",
+      "id": "grid_gap",
+      "label": "Grid gap",
+      "min": 8,
+      "max": 40,
+      "step": 4,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "heading_alignment",
+      "label": "Heading alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "label": "Heading size",
+      "min": 20,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "product_title_size",
+      "label": "Product title size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "price_size",
+      "label": "Price size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    { "type": "color", "id": "background_color", "label": "Background", "default": "#FFFFFF" },
+    { "type": "color", "id": "heading_color", "label": "Heading", "default": "#121212" },
+    { "type": "color", "id": "card_background", "label": "Card background", "default": "#FFFFFF" },
+    { "type": "color", "id": "card_border_color", "label": "Card border", "default": "#E5E5E5" },
+    { "type": "color", "id": "product_title_color", "label": "Product title", "default": "#121212" },
+    { "type": "color", "id": "vendor_color", "label": "Vendor", "default": "#666666" },
+    { "type": "color", "id": "price_color", "label": "Price", "default": "#121212" },
+    { "type": "color", "id": "compare_price_color", "label": "Compare price", "default": "#999999" },
+    { "type": "color", "id": "sale_price_color", "label": "Sale price", "default": "#D82C0D" },
+    { "type": "color", "id": "button_background", "label": "Button background", "default": "#121212" },
+    { "type": "color", "id": "button_text_color", "label": "Button text", "default": "#FFFFFF" },
+    { "type": "color", "id": "button_hover_background", "label": "Button hover background", "default": "#000000" },
+    { "type": "color", "id": "sold_out_button_background", "label": "Sold out button background", "default": "#CCCCCC" },
+    { "type": "color", "id": "sold_out_button_text", "label": "Sold out button text", "default": "#666666" },
+    { "type": "color", "id": "sale_badge_bg", "label": "Sale badge background", "default": "#D82C0D" },
+    { "type": "color", "id": "sale_badge_color", "label": "Sale badge text", "default": "#FFFFFF" },
+    {
+      "type": "header",
+      "content": "Card style"
+    },
+    {
+      "type": "range",
+      "id": "card_border_width",
+      "label": "Border width",
+      "min": 0,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "card_border_radius",
+      "label": "Border radius",
+      "min": 0,
+      "max": 20,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "button_border_radius",
+      "label": "Button border radius",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 4
+    }
+  ],
+  "presets": [
+    { "name": "Custom related products" }
+  ]
+}
+{% endschema %}
